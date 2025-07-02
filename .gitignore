@@ -7,3 +7,5 @@ experiments
 tb_logger
 src/utils/MANO/models
 
+# drafts
+*.ipynb
