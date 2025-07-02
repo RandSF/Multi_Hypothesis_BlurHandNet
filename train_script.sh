@@ -1,0 +1,2 @@
+# CUDA_VISIBLE_DEVICES="0,1" torchrun --nproc_per_node=2 src/train_bh.py --opt /home/zzq/Yuming/BlurHand_RELEASE/options/train/baseline.yml
+CUDA_VISIBLE_DEVICES="0,1" torchrun --nproc_per_node=2 src/train_bh.py --opt /home/zzq/Yuming/BlurHand_RELEASE/options/train/baseline_rm.yml

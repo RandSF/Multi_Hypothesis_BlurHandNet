@@ -1,0 +1,90 @@
+name: baseline_k16t1_rm
+num_gpus: 2
+num_threads: 16
+manual_seed: 4543
+continue_train: False
+log_grad: False
+load_backbone_weight: True
+use_ema: True
+
+# task related parameters
+task_parameters: 
+  num_k: 16
+  num_k_select: 4
+  num_timestep: 3
+  num_joints: 21
+  input_img_shape: [256, 256]
+  output_hm_shape: [32, 32, 32]
+  # output_hm_shape: [64, 64, 64]
+  camera_3d_size: 0.4
+  bbox_3d_size: 0.3
+  focal: [5000, 5000]  # virtual focal lengths
+  princpt: [128, 128]  # virtual principal point position
+  
+# dataset list
+dataset_list:
+  dataset1:  # can be arbitrary
+    name: BlurHand
+    img_path: datasets/BlurHand/blur_images
+    annot_path: datasets/BlurHand/annotations
+    is_3d: True
+  # dataset2 ...
+
+model:
+  runner: runner_bh_rm
+  training: training_model_rm
+  generator: models.generation_model
+  selector: models.selection_model
+  criterion: criterion_rm_one
+
+# network structures
+network:
+  resnet:
+    resnet_type: 50
+    dim: 512
+
+  unfolder:
+    in_dim: 2048
+    out_dim: 512
+    out_chans: 512
+
+  transformer:
+    in_dim: 512
+    embed_dim: 512
+    out_dim: 512
+    num_blocks: 4
+    num_heads: 4
+    dropout: 0.0
+
+  reward:
+    patch_size: 8
+    in_chans: 2048
+    embed_dim: 512
+    input_embed: 512
+    drop_rate: 0.
+    num_blocks: 4
+    num_heads: 4
+    alpha: 0.5
+
+
+# training configurations
+train:
+  batch_size: 24
+  end_epoch: 30
+  save_interval: 2
+
+  optim:
+    # scheduler: 'linear'
+    lr: !!float 2e-4  # 2e-4
+    lr_min: !!float 1e-7 #5e-6
+    lr_dec_epoch: [15, 25, 30]
+    lr_dec_factor: !!float 5
+    weight_decay: !!float 1e-4
+    apply_grad_clip: True
+    grad_clip_norm: 1.0
+
+  loss:
+    joint_hm: !!float 8 # = 32*0.25
+
+test:
+  batch_size: 48
