@@ -7,7 +7,7 @@ from .adjoint_matrix import build_temporal_spatial_adjoint_matrix
 from .transformer_layers import EncoderBlock, DecoderBlock, ResidualBlock, positionalencoding2d
 
 
-class Transformer_old(nn.Module):
+class Transformer(nn.Module):
     def __init__(self, in_dim, embed_dim, out_dim, num_blocks, num_heads, num_k, num_timestep, num_joints, dropout=0, ratio=4, 
                  **kwargs):
         super().__init__()
@@ -56,70 +56,3 @@ class Transformer_old(nn.Module):
         feat_refine = x.reshape(B, K, T, J, -1).transpose(0, 1)
 
         return feat_refine
-
-class Transformer(nn.Module):
-    def __init__(self, in_dim, embed_dim, out_dim, num_blocks, num_heads, num_k, num_timestep, num_joints, dropout=0, ratio=4, 
-                 **kwargs):
-        super().__init__()
-        self.dim = embed_dim
-        self.num_timestep = num_timestep
-        self.num_joints = num_joints
-        self.num_k = num_k
-
-        self.enc_blocks = nn.ModuleList([
-            EncoderBlock(embed_dim, num_heads, dropout, ratio) for _ in range(num_blocks)
-        ])
-
-        self.dec_blocks = nn.ModuleList([
-            DecoderBlock(embed_dim, num_heads, dropout, ratio) for _ in range(num_blocks)
-        ])
-
-        self.hypo_embed = nn.Parameter(torch.zeros(1, num_k, 1, embed_dim))
-        self.hypo_embed_t = nn.Parameter(torch.zeros(1, 1, num_timestep, embed_dim))
-        self.pos_embed_t = nn.Parameter(torch.zeros(1, num_timestep, 1, embed_dim))  # time direction
-        self.pos_embed_j = nn.Parameter(torch.zeros(1, 1, num_joints, embed_dim))  # joint direction
-        # self.query_fingers = nn.Parameter(torch.zeros(1, num_timestep*6, embed_dim)) # finger & root queries
-
-        trunc_normal_(self.hypo_embed, std=.02)
-        trunc_normal_(self.hypo_embed_t, std=.02)
-        trunc_normal_(self.pos_embed_t, std=.02)
-        trunc_normal_(self.pos_embed_j, std=.02)
-        # trunc_normal_(self.query_fingers, std=.02)
-
-        # self.register_buffer("masks", None, persistent=False)
-        # mats = build_temporal_spatial_adjoint_matrix(k=num_blocks)   # [k, TJ, TJ]
-        # self.masks = ~F.pad(mats, (0,64, 0,64), mode='constant', value=1)
-        # self.masks = ~mats
-        
-    def forward(self, feat_joint):
-        # feat_joint: [B, T, J, E]
-        K = self.num_k
-        B, T, J, _ = feat_joint.shape
-
-
-        x = (feat_joint + self.pos_embed_t + self.pos_embed_j).flatten(1, 2)
-        for block in self.enc_blocks:
-            x = block(x)
-
-        mem = x
-        x = (self.hypo_embed+self.hypo_embed_t).flatten(1, 2).expand(B, -1, -1)
-
-        for block in self.dec_blocks:
-            x = block(x, mem)
-
-        feat_refine = x.reshape(B, K, T, -1).transpose(0, 1)
-
-        return feat_refine
-
-class Mlp(nn.Module):
-    def __init__(self, dim):
-        super().__init__()
-        self.mlp = nn.Sequential(
-            nn.Linear(dim, 4*dim),
-            nn.ReLU(),
-            nn.Linear(4*dim, dim),
-            nn.ReLU()
-        )
-
-    def forward(self, x):
-        return self.mlp(x)

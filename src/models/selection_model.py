@@ -5,7 +5,7 @@ import torch.nn as nn
 
 from models.modules.unfolder2d import Unfolder
 from models.modules.resnetbackbone import ResNetBackbone
-from models.modules.reward_model_cur import ScoreNet
+from models.modules.reward_model import ScoreNet
 from models.modules.layer_utils import init_weights
 from utils.MANO import mano
 

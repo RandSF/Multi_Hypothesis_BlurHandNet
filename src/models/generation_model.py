@@ -5,8 +5,8 @@ import torch.nn as nn
 
 from models.modules.unfolder2d import Unfolder
 from models.modules.resnetbackbone import ResNetBackbone
-from models.modules.transformer import Transformer_old as Transformer
-from models.modules.regressor_sim import Regressor_old as Regressor
+from models.modules.transformer import Transformer
+from models.modules.regressor_sim import Regressor
 from models.modules.layer_utils import init_weights
 from utils.MANO import mano
 

@@ -96,24 +96,43 @@ class DecoderBlock(nn.Module):
         self.dropout3 = nn.Dropout(dropout)
         self.activation = nn.ReLU()
 
-    def forward(self, tgt, mem, #mem_pos: Optional[Tensor] = None, 
-                src_mask: Optional[Tensor] = None, cross_mask: Optional[Tensor] = None):
-        
+    def with_pos_embed(self, tensor, pos):
+        return tensor + pos
+
+    def forward(self, tgt, memory,mask= None,mask_ctx = None,pos_tgt=None, pos_ctx=None):
+        B, E = memory.shape[0], memory.shape[-1]
         tgt2 = self.norm1(tgt)
-        tgt2 = self.self_attn(tgt2, tgt2, value=tgt2, attn_mask=src_mask)[0]
+        q = k = self.with_pos_embed(tgt2, pos_tgt)
+        tgt2 = self.self_attn(q, k, value=tgt2, attn_mask=mask)[0]
         tgt = tgt + self.dropout1(tgt2)
-
         tgt2 = self.norm2(tgt)
-        key = mem# + mem_pos
-        value = mem
-        tgt2 = self.cross_attn(tgt2, key, value, attn_mask=cross_mask)[0]
+        tgt2 = self.cross_attn(query=self.with_pos_embed(tgt2, pos_tgt),
+                                   key=self.with_pos_embed(memory, pos_ctx),
+                                   value=memory)[0]
+        tgt2 = tgt2.contiguous().view(tgt.shape[0],tgt.shape[1],tgt.shape[2])
         tgt = tgt + self.dropout2(tgt2)
-
-
         tgt2 = self.norm3(tgt)
         tgt2 = self.linear2(self.dropout(self.activation(self.linear1(tgt2))))
         tgt = tgt + self.dropout3(tgt2)
         return tgt
+    # def forward(self, tgt, mem, #mem_pos: Optional[Tensor] = None, 
+    #             src_mask: Optional[Tensor] = None, cross_mask: Optional[Tensor] = None):
+        
+    #     tgt2 = self.norm1(tgt)
+    #     tgt2 = self.self_attn(tgt2, tgt2, value=tgt2, attn_mask=src_mask)[0]
+    #     tgt = tgt + self.dropout1(tgt2)
+
+    #     tgt2 = self.norm2(tgt)
+    #     key = mem# + mem_pos
+    #     value = mem
+    #     tgt2 = self.cross_attn(tgt2, key, value, attn_mask=cross_mask)[0]
+    #     tgt = tgt + self.dropout2(tgt2)
+
+
+    #     tgt2 = self.norm3(tgt)
+    #     tgt2 = self.linear2(self.dropout(self.activation(self.linear1(tgt2))))
+    #     tgt = tgt + self.dropout3(tgt2)
+    #     return tgt
     
 class ResidualBlock(nn.Module):
     def __init__(self, indim, outdim):
