@@ -1,4 +1,4 @@
-name: baseline_k16t1
+name: k16t1
 num_gpus: 2
 num_threads: 16
 manual_seed: 114514

@@ -24,7 +24,7 @@ from training import get_trainer
 class Runner():
     def __init__(self, opt, args, logger, training):
         self.opt = opt
-        self.exp_dir = osp.join('experiments', opt['name'])
+        self.exp_dir = osp.join('experiments', f"{opt['name']}_{opt['postfix']}")
         self.tb_dir = osp.join('tb_logger', opt['name'])
         self.cur_epoch = 0
         self.end_epoch = opt['train']['end_epoch'] if training else None
@@ -177,27 +177,25 @@ class Runner():
         model = DataParallel(model, device_ids=[0]).cuda()
         
         # load trained model
+        ## selection model
         file_path = osp.join(self.exp_dir, 'training_states', 'epoch_{:02d}.pth.tar'.format(self.opt['test']['epoch']))
         assert osp.exists(file_path), 'Cannot find training state at ' + file_path
-        ckpt = torch.load(file_path)
-        flag = 0
-        for k, v in ckpt['network'].items():
-            if k.find('generator.') == -1 and k.find('selector.') == -1:
-                flag = 1
-                break
-        if flag==1:
-            dd = dict()
-            for k, v in ckpt['network'].items():
-                if k.find('generator.') == -1 and not k.find('selector.')>-1:
-                    dd[k[:7]+'generator.'+k[7:]] = v
-            info = model.load_state_dict(dd, strict=False)  # set strict=False due to MANO-related module
-        else:
-            info = model.load_state_dict(ckpt['network'], strict=False)  # set strict=False due to MANO-related module
-        
-        raise NotImplementedError("EMA!")
+        ckpt_rm = torch.load(file_path)
+
+        weight_sel = ckpt_rm['network']
+
+        info = model.load_state_dict(ckpt_rm['network'], strict=False)  # set strict=False due to MANO-related module
         print(info.unexpected_keys)
-        print(info.missing_keys)
+        print([k for k in info.missing_keys if 'generator' not in k])
+
+        if self.opt['test']['load_ema']: 
+            ema = ExponentialMovingAverage(model.parameters())
+            ema.load_state_dict(ckpt_rm['ema'])
+        else: 
+            ema = None
+
         self.model = model
+        self.ema = ema
 
     def save_state(self, epoch):
         os.makedirs(osp.join(self.exp_dir, 'training_states'), exist_ok=True)
@@ -282,7 +280,7 @@ class Runner():
         return info
     
     def evaluate(self, ):
-        if self.opt['use_ema']: 
+        if self.opt['test']['load_ema']: 
             self.ema.store(self.model.parameters())
             self.ema.copy_to(self.model.parameters())
         self.model.eval()
@@ -295,7 +293,7 @@ class Runner():
                     if k not in eval_result.keys():
                         eval_result[k] = []
                     eval_result[k].append(out[k])   # [B, J]
-        if self.opt['use_ema']: 
+        if self.opt['test']['load_ema']: 
             self.ema.restore(self.model.parameters())
         return {k: torch.cat(v,dim=0) for k, v in eval_result.items()}
 

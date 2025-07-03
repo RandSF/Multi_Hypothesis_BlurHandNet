@@ -198,18 +198,6 @@ class Criterion(nn.Module):
                 'jpe_current_middle': joint_err[7,:,1], 
                 'jpe_past_middle': joint_err[7,:,0], 
                 'jpe_future_middle': joint_err[7,:,2], 
-
-                # 'jpe_current_sort': joint_err_rew[0,:,1], 
-                # 'jpe_past_sort': joint_err_rew[0,:,0], 
-                # 'jpe_future_sort': joint_err_rew[0,:,2], 
-
-                # 'jpe_current_sort_last': joint_err_rew[-1,:,1], 
-                # 'jpe_past_sort_last': joint_err_rew[-1,:,0], 
-                # 'jpe_future_sort_last': joint_err_rew[-1,:,2], 
-
-                # 'pa_jpe_sort_current': pajpe_rew[0,:,1], 
-                # 'pa_jpe_sort_past': pajpe_rew[0,:,0], 
-                # 'pa_jpe_sort_future': pajpe_rew[0,:,2],
                 
                 'jpe_current_worst':joint_err[-1,:,1], 
                 'jpe_past_worst': joint_err[-1,:,0], 

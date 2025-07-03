@@ -20,11 +20,10 @@ class TrainingModel(torch.nn.Module):
         self.selector = get_rew_model(rew_name, opt, training)
         self.criterion = get_criterion(crit_name, opt)
     
-        # self.ema = ExponentialMovingAverage(self.selector.parameters())
         load_model(self.generator, self.selector, opt)
         for p in self.generator.parameters():
             p.requires_grad = False
-        self.mode_list = ['train', 'train-rm', 'test']
+        self.mode_list = ['train', 'test']
 
     def forward(self, inputs, targets, meta_info, mode = None):
         if mode == 'train':
@@ -65,14 +64,11 @@ def get_criterion(name, opt):
     if name == 'criterion_rm':
         from training.criterion_rm import Criterion
         return Criterion(opt)
-    if name == 'criterion_rm_one':
-        from training.criterion_rm_one import Criterion
-        return Criterion(opt)
 
     raise KeyError
 
 def load_model(gen_model: torch.nn.Module, sel_model: torch.nn.Module, opt):
-    exp_name = opt['name'][:opt['name'].find('-')]
+    exp_name = opt['name']
     exp_dir = osp.join('experiments', exp_name) # drop 'postfix'
     states_list = glob(osp.join(exp_dir, 'training_states', '*.pth.tar'))
     cur_epoch = max([int(file_name[file_name.find('epoch_') + 6:file_name.find('.pth.tar')])
@@ -84,4 +80,4 @@ def load_model(gen_model: torch.nn.Module, sel_model: torch.nn.Module, opt):
         weights[k[17:]] = v  # drop 'module.generator.'
     info_g = gen_model.load_state_dict(weights, strict=False)
     info_s = sel_model.load_state_dict(weights, strict=False)
-    return info_g#, info_s
+    return info_g, info_s

@@ -198,19 +198,8 @@ class Runner():
         file_path = osp.join(self.exp_dir, 'training_states', 'epoch_{:02d}.pth.tar'.format(self.opt['test']['epoch']))
         assert osp.exists(file_path), 'Cannot find training state at ' + file_path
         ckpt = torch.load(file_path)
-        flag = 0
-        for k, v in ckpt['network'].items():
-            if k.find('generator.') == -1 and k.find('selector.') == -1:
-                flag = 1
-                break
-        if flag==1:
-            dd = dict()
-            for k, v in ckpt['network'].items():
-                if k.find('generator.') == -1 and not k.find('selector.')>-1:
-                    dd[k[:7]+'generator.'+k[7:]] = v
-            info = model.load_state_dict(dd, strict=False)  # set strict=False due to MANO-related module
-        else:
-            info = model.load_state_dict(ckpt['network'], strict=False)  # set strict=False due to MANO-related module
+
+        info = model.load_state_dict(ckpt['network'], strict=False)  # set strict=False due to MANO-related module
         print(info.unexpected_keys)
         print(info.missing_keys)
         self.model = model

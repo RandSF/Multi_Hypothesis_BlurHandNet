@@ -55,9 +55,9 @@ class EncoderBlock(nn.Module):
         self.self_attn = nn.MultiheadAttention(dim, num_heads, dropout=dropout, batch_first=True)
 
         # MLP
-        self.linear1 = nn.Linear(dim, dim*ratio)
+        self.linear1 = nn.Linear(dim, int(dim*ratio))
         self.dropout = nn.Dropout(dropout)
-        self.linear2 = nn.Linear(dim*ratio, dim)
+        self.linear2 = nn.Linear(int(dim*ratio), dim)
 
         # Layer Normalization & Dropout
         self.norm1 = nn.LayerNorm(dim)
@@ -80,12 +80,12 @@ class DecoderBlock(nn.Module):
     def __init__(self, dim, num_heads, dropout=0, ratio=4):
         super().__init__()
         self.self_attn = nn.MultiheadAttention(dim, num_heads, dropout=dropout, batch_first=True)
-        self.cross_attn = nn.MultiheadAttention(dim, num_heads, dropout=dropout, batch_first=True)
+        self.multihead_attn = nn.MultiheadAttention(dim, num_heads, dropout=dropout, batch_first=True)
 
         # MLP
-        self.linear1 = nn.Linear(dim, dim*ratio)
+        self.linear1 = nn.Linear(dim, int(dim*ratio))
         self.dropout = nn.Dropout(dropout)
-        self.linear2 = nn.Linear(dim*ratio, dim)
+        self.linear2 = nn.Linear(int(dim*ratio), dim)
 
         # Layer Normalization & Dropout
         self.norm1 = nn.LayerNorm(dim)
@@ -106,7 +106,7 @@ class DecoderBlock(nn.Module):
         tgt2 = self.self_attn(q, k, value=tgt2, attn_mask=mask)[0]
         tgt = tgt + self.dropout1(tgt2)
         tgt2 = self.norm2(tgt)
-        tgt2 = self.cross_attn(query=self.with_pos_embed(tgt2, pos_tgt),
+        tgt2 = self.multihead_attn(query=self.with_pos_embed(tgt2, pos_tgt),
                                    key=self.with_pos_embed(memory, pos_ctx),
                                    value=memory)[0]
         tgt2 = tgt2.contiguous().view(tgt.shape[0],tgt.shape[1],tgt.shape[2])

@@ -38,8 +38,7 @@ class SelectionModel(nn.Module):
         # feat_joint = inputs['feats_backbone']['unfolder']
 
         pose = inputs['pose'].detach()
-        joint = inputs['joint'].detach()
-        scores = self.scorenet(pose, joint, feat_blur, feat_joint)
+        scores = self.scorenet(pose, feat_blur, feat_joint)
         return {
             'joint_hm_rm': joint_img, 
             'score': scores,

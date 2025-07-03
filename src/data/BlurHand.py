@@ -201,13 +201,9 @@ class BlurHand(torch.utils.data.Dataset):
                 data['joint_cam_future'] = joint_cam_future[self.joint_set['hand']['joint_type'][hand_type],:]
                 data['joint_valid_future'] = joint_valid_future[self.joint_set['hand']['joint_type'][hand_type],:]
 
-                # for SSL
-                data['ssl_flag'] = np.random.rand() < 2
-                if data['ssl_flag']: cnt += 1
                 datalist.append(data)
 
         print("Total number of sample in BlurHand: {}".format(len(datalist)))
-        print("Total number of SL sample: {}, {}%".format(cnt, cnt/len(datalist)*100))
         return datalist
     
     def __getitem__(self, idx):

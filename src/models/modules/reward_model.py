@@ -69,7 +69,7 @@ class ScoreNet(nn.Module):
         # blocks
         dpr = [x.item() for x in torch.linspace(0, drop_rate, num_blocks)]  # stochastic depth decay rule
         self.blocks = nn.ModuleList([
-            DecoderBlock(embed_dim, num_heads, mlp_ratio, dpr[i])
+            DecoderBlock(embed_dim, num_heads, dpr[i], mlp_ratio)
         for i in range(num_blocks)] )
         # score head
         self.last_norm = nn.LayerNorm(embed_dim)
@@ -85,16 +85,16 @@ class ScoreNet(nn.Module):
             nn.Linear(1024,2)   # for JRC
         )
 
-    def forward(self, feat_mano, pose, joint_cam, ctx, feat_joint):
+    def forward(self,  pose, ctx, feat_joint):
         '''
         ctx: [B, C, H, W]
-        feat_mano: [B, K, T, J, E]
+        feat_joint: [B, K, T, J, E]
         pose: [B, K, T, theta]
         joint_cam: [B, K, T, J, 3]
 
         '''
-        B, K, T, J, E = feat_mano.shape
-        # K = self.num_k
+        B, T, J, E = feat_joint.shape
+        K = self.num_k
 
         ctx = self.ctx_layer(ctx) # [B, HW, E]
         
@@ -117,8 +117,14 @@ class ScoreNet(nn.Module):
         score_feature = self.last_norm(x)
 
         score = self.score_head(score_feature)# [BK, 2]
+        
+        score = (score
+            .reshape(B, K, 1, 2)
+            .permute(1, 0, 2, 3)
+            .expand(K, B, T, 2)
+        )
 
-        return score.reshape(B, K, 2)   # [B, K, 2]
+        return score
     
 if __name__ == '__main__':
     
